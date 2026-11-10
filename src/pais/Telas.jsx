@@ -123,7 +123,11 @@ export function Hoje({ p, aoRapido }) {
             <article className="cartao" key={c.id}>
               <div className="cartao-topo">
                 <div><b>{c.materia}</b>{c.professor && <small>{c.professor}</small>}</div>
-                <span className={`tag ${c.selo === 'duvida' ? 'tag-warn' : 'tag-ok'}`}>{c.selo === 'duvida' ? 'Com dúvida' : 'Completo'}</span>
+                {c.selo === 'duvida'
+                  ? <span className="tag tag-warn">Com dúvida</span>
+                  : !c.texto && c.fotoPendente
+                    ? <span className="tag tag-warn">Falta a foto</span>
+                    : <span className="tag tag-ok">Completo</span>}
               </div>
               {c.texto
                 ? <p>{c.texto}{c.prazo ? ` Para ${dataExtenso(c.prazo)}.` : ''}</p>
