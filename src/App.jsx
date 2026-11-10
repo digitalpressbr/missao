@@ -1,21 +1,21 @@
-// Tarefa 1: só a tela de entrada, ainda sem ação. A sessão entra na Tarefa 4.
+import { ProvedorDeSessao, usarSessao } from './comum/Sessao.jsx'
+import Entrar from './comum/Entrar.jsx'
+import CriarSenha from './comum/CriarSenha.jsx'
+import Jogador from './jogador/Jogador.jsx'
+import Pais from './pais/Pais.jsx'
+
+function Rotas() {
+  const { carregando, membro } = usarSessao()
+  if (carregando) return <main className="modo-jogador"><div className="tela entrar"><p className="g-sub">Carregando...</p></div></main>
+  if (!membro) return <Entrar />
+  if (membro.trocar_senha) return <CriarSenha />
+  return membro.papel === 'filho' ? <Jogador /> : <Pais />
+}
+
 export default function App() {
   return (
-    <main className="modo-jogador">
-      <div className="tela entrar">
-        <h1>Missão do Dia</h1>
-        <form onSubmit={(e) => e.preventDefault()}>
-          <label className="g-rotulo" htmlFor="usuario">
-            Nome de usuário
-            <input id="usuario" className="g-campo" autoCapitalize="none" autoCorrect="off" autoComplete="username" />
-          </label>
-          <label className="g-rotulo" htmlFor="senha">
-            Senha
-            <input id="senha" className="g-campo" type="password" autoComplete="current-password" />
-          </label>
-          <button className="g-btn" type="submit">Entrar</button>
-        </form>
-      </div>
-    </main>
+    <ProvedorDeSessao>
+      <Rotas />
+    </ProvedorDeSessao>
   )
 }
