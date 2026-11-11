@@ -4,10 +4,10 @@ import AvatarImg, { MOLDURAS } from '../comum/AvatarImg.jsx'
 import Avisos from '../comum/Avisos.jsx'
 import { usarPainel } from '../lib/usarPainel'
 import { avisarEntrega, definirMoldura, entregarMissao, mensagemEntrega } from '../lib/dados'
-import { noHorario } from '../lib/regras'
+import { noHorario, proximosDiasLetivos } from '../lib/regras'
 import { tocarChamada, tocarVitoria } from '../lib/som'
 import { estadoInicial, lerRascunho, missaoReducer, montarEntrega, salvarRascunho } from './missaoEstado'
-import { Aulas, Detalhes, Foto } from './Passos.jsx'
+import { Aulas, Detalhes, Foto, Paginas } from './Passos.jsx'
 
 function Barra({ de, para, meta }) {
   const [valor, setValor] = useState(de)
@@ -126,6 +126,8 @@ export default function Jogador() {
     )
   } else if (estado.passo === 'aulas') {
     conteudo = <Aulas aulas={p.aulas} estado={estado} dispatch={dispatch} />
+  } else if (estado.passo === 'paginas') {
+    conteudo = <Paginas key={estado.indice} aulas={p.aulas} estado={estado} dispatch={dispatch} hoje={p.hoje} prazos={proximosDiasLetivos(p.hoje, p.painel.semAula)} />
   } else if (estado.passo === 'foto') {
     conteudo = completando
       ? <Foto estado={estado} dispatch={(a) => (a.tipo === 'voltar' ? voltarAoInicio() : dispatch(a))} familiaId={membro.familia_id} dia={p.hoje} completando />

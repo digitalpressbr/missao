@@ -4,10 +4,11 @@ import Avisos from '../comum/Avisos.jsx'
 import { usarPainel } from '../lib/usarPainel'
 import { avisarEntrega, entregarMissao, mensagemEntrega } from '../lib/dados'
 import { estadoInicial, lerRascunho, missaoReducer, montarEntrega, salvarRascunho } from '../jogador/missaoEstado'
-import { Aulas, Detalhes } from '../jogador/Passos.jsx'
+import { Aulas, Detalhes, Paginas } from '../jogador/Passos.jsx'
+import { proximosDiasLetivos } from '../lib/regras'
 import { Hoje, Semana } from './Telas.jsx'
 
-// O filho responde no celular de quem busca. A foto da agenda fica para casa.
+// O filho responde no celular de quem busca.
 function ModoRapido({ p, familiaId, aoFechar }) {
   const [estado, dispatch] = useReducer(missaoReducer, undefined, () => {
     const rascunho = lerRascunho(localStorage, p.hoje, 'rapido')
@@ -39,6 +40,7 @@ function ModoRapido({ p, familiaId, aoFechar }) {
 
   let conteudo
   if (estado.passo === 'aulas') conteudo = <Aulas aulas={p.aulas} estado={estado} dispatch={despachar} />
+  else if (estado.passo === 'paginas') conteudo = <Paginas key={estado.indice} aulas={p.aulas} estado={estado} dispatch={despachar} hoje={p.hoje} prazos={proximosDiasLetivos(p.hoje, p.painel.semAula)} />
   else if (estado.passo === 'detalhes') conteudo = <Detalhes estado={estado} dispatch={despachar} familiaId={familiaId} dia={p.hoje} />
   else if (estado.passo === 'enviando') conteudo = <div className="g-win"><h2>Entregando...</h2></div>
   else if (estado.passo === 'erro') {

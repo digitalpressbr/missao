@@ -117,14 +117,80 @@ export function seloTarefa(missao) {
   return falouAlgo && !contou ? 'duvida' : 'completo'
 }
 
+const ONDE = { livro: 'Livro', apostila: 'Apostila', caderno: 'Caderno', folha: 'Folha' }
+const DIAS_CURTOS = ['seg', 'ter', 'qua', 'qui', 'sex', 'sáb', 'dom']
+
+// Páginas chegam do banco como texto ('45, 46') e do app como lista.
+export function listaPaginas(paginas) {
+  if (Array.isArray(paginas)) return paginas.map(String).filter(Boolean)
+  return String(paginas ?? '').split(/[,\s]+/).filter(Boolean)
+}
+
+function juntar(itens) {
+  return itens.length <= 1 ? itens.join('') : `${itens.slice(0, -1).join(', ')} e ${itens[itens.length - 1]}`
+}
+
+// 'Livro, páginas 45 e 46' · 'Página 12' · 'Caderno, sem a página' · ''
+export function ondeEPaginas(tarefa) {
+  const pags = listaPaginas(tarefa?.paginas)
+  const onde = ONDE[tarefa?.onde] ?? ''
+  if (!pags.length) return onde ? `${onde}, sem a página` : ''
+  const texto = `${pags.length === 1 ? 'página' : 'páginas'} ${juntar(pags)}`
+  return onde ? `${onde}, ${texto}` : texto.charAt(0).toUpperCase() + texto.slice(1)
+}
+
+// Os próximos `n` dias de aula depois de `hoje`.
+export function proximosDiasLetivos(hoje, semAula = [], n = 5) {
+  const dias = []
+  for (let i = 1; dias.length < n && i <= 60; i++) {
+    const dia = somarDias(hoje, i)
+    if (ehDiaLetivo(dia, semAula)) dias.push(dia)
+  }
+  return dias
+}
+
+// 'qui 12/11'
+export function diaCurto(dia) {
+  const [, mes, d] = dia.split('-')
+  return `${DIAS_CURTOS[diaSemana(dia) - 1]} ${d}/${mes}`
+}
+
+// Selo de uma tarefa: dúvida quando a missão ficou com dúvida ou quando não veio página nem texto.
+export function seloDaTarefa(missao, tarefa) {
+  if (seloTarefa(missao) === 'duvida') return 'duvida'
+  return tarefa.texto || listaPaginas(tarefa.paginas).length ? 'completo' : 'duvida'
+}
+
 // aluno já vem com o artigo: 'o Léo', 'a Ana'.
 export function recadoProfessora(tarefa, origem, aluno) {
   const quem = tarefa.professor || 'Professora'
-  if (!tarefa.texto) {
+  const temPagina = listaPaginas(tarefa.paginas).length > 0
+  if (!tarefa.texto && !temPagina) {
     return `${quem}, ${aluno} disse que tem tarefa de ${tarefa.materia}, mas não lembrou os detalhes. Pode me passar o que precisa?`
   }
   const prazo = tarefa.prazo ? ` para ${dataExtenso(tarefa.prazo)}` : ''
+  if (!tarefa.texto) {
+    return `${quem}, ${aluno} trouxe tarefa de ${tarefa.materia}${prazo} (${ondeEPaginas(tarefa).toLowerCase()}). Tem algum detalhe de como deve ser feito ou levado?`
+  }
   return `${quem}, ${aluno} trouxe tarefa de ${tarefa.materia}${prazo}: “${tarefa.texto}” Tem algum detalhe de como deve ser feito ou levado?`
+}
+
+// Texto do aviso que os pais recebem na hora da entrega, já com a tarefa. No máximo 300 caracteres.
+export function resumoEntrega({ filho, tarefas = [] }) {
+  if (!tarefas.length) return `${filho} entregou a missão: sem tarefa hoje.`
+  const itens = tarefas.map((t) => {
+    const pags = listaPaginas(t.paginas)
+    const partes = [
+      ONDE[t.onde]?.toLowerCase(),
+      pags.length ? `p. ${juntar(pags)}` : null,
+      t.prazo ? `para ${diaCurto(t.prazo)}` : null,
+    ].filter(Boolean)
+    if (pags.length) return `${t.materia}: ${partes.join(', ')}.`
+    if (t.texto) return `${t.materia}: ${t.texto}`
+    return `${t.materia}: não lembrou a página.`
+  })
+  const texto = `${filho} entregou a missão. ${itens.join(' ')}`
+  return texto.length <= 300 ? texto : `${texto.slice(0, 299)}…`
 }
 
 // Quais avisos estão devidos agora. O chamador grava cada tipo enviado e passa em `enviados` na próxima vez.

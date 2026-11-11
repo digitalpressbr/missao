@@ -188,3 +188,17 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 }
 
 a.g-btn, a.btn { text-decoration: none; }
+
+/* Páginas da tarefa: escolhas de um toque e teclado de números */
+.g-lbl { font-weight: 700; font-size: .92rem; color: var(--g-muted); }
+.g-chips { display: flex; flex-wrap: wrap; gap: .4rem; }
+.g-tag { font-weight: 700; min-height: 2.6rem; cursor: pointer; border: 1.5px solid var(--g-line); border-radius: .4rem; padding: .35rem .8rem; background: var(--g-panel); color: var(--g-ink); }
+.g-tag[aria-pressed="true"], .g-tag-pag { background: var(--g-accent); border-color: var(--g-accent); color: var(--g-accent-ink); }
+.g-tag-pag { font-family: var(--display); font-size: 1.1rem; }
+.g-visor { display: flex; align-items: center; min-height: 3rem; border: 1.5px solid var(--g-line); border-radius: .5rem; padding: .3rem .8rem; background: var(--g-panel); font-family: var(--display); font-weight: 700; font-size: 1.5rem; }
+.g-visor-vazio { color: var(--g-muted); font-size: 1.1rem; font-weight: 600; }
+.g-teclado { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4rem; }
+.g-teclado button { font-family: var(--display); font-weight: 700; font-size: 1.3rem; min-height: 3rem; cursor: pointer; border: 1.5px solid var(--g-line); border-radius: .45rem; background: var(--g-panel); color: var(--g-ink); }
+.g-teclado button:active { background: var(--g-panel-2); }
+.g-teclado .g-tecla-mais { font-size: 1rem; border-color: var(--g-accent); color: var(--g-accent); }
+.g-teclado button:disabled { opacity: .45; cursor: default; }

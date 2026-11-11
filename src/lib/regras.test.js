@@ -127,3 +127,47 @@ describe('painel e avisos', () => {
     expect(r.avisosDevidos({ ...base, letivo: false, hora: '19:00', enviados: [] })).toEqual([])
   })
 })
+
+describe('tarefa anotada no livro: onde, páginas e prazo', () => {
+  it('lista de páginas aceita texto do banco e lista do app', () => {
+    expect(r.listaPaginas('45, 46')).toEqual(['45', '46'])
+    expect(r.listaPaginas(['7'])).toEqual(['7'])
+    expect(r.listaPaginas(null)).toEqual([])
+    expect(r.listaPaginas('')).toEqual([])
+  })
+  it('descreve onde e quais páginas', () => {
+    expect(r.ondeEPaginas({ onde: 'livro', paginas: '45, 46' })).toBe('Livro, páginas 45 e 46')
+    expect(r.ondeEPaginas({ paginas: '12' })).toBe('Página 12')
+    expect(r.ondeEPaginas({ onde: 'apostila', paginas: '3, 4, 8' })).toBe('Apostila, páginas 3, 4 e 8')
+    expect(r.ondeEPaginas({ onde: 'caderno' })).toBe('Caderno, sem a página')
+    expect(r.ondeEPaginas({})).toBe('')
+  })
+  it('próximos dias de aula pulam fim de semana e dia sem aula', () => {
+    expect(r.proximosDiasLetivos('2026-11-11', ['2026-11-13'], 4)).toEqual(['2026-11-12', '2026-11-16', '2026-11-17', '2026-11-18'])
+    expect(r.diaCurto('2026-11-12')).toBe('qui 12/11')
+  })
+  it('selo de cada tarefa: sem página e sem texto é dúvida', () => {
+    const missao = { nao_lembro: false, respostas: {} }
+    expect(r.seloDaTarefa(missao, { paginas: '45' })).toBe('completo')
+    expect(r.seloDaTarefa(missao, { texto: 'Ler o capítulo.' })).toBe('completo')
+    expect(r.seloDaTarefa(missao, { onde: 'livro' })).toBe('duvida')
+    expect(r.seloDaTarefa({ nao_lembro: true, respostas: {} }, { paginas: '45' })).toBe('duvida')
+  })
+  it('recado para a professora cita as páginas quando não há texto', () => {
+    const t = { materia: 'ELA', professor: 'Prof. Marta', onde: 'livro', paginas: '45, 46', prazo: '2026-11-13' }
+    expect(r.recadoProfessora(t, 'jogador', 'o Léo')).toBe('Prof. Marta, o Léo trouxe tarefa de ELA para sexta, 13/11 (livro, páginas 45 e 46). Tem algum detalhe de como deve ser feito ou levado?')
+    expect(r.recadoProfessora({ ...t, paginas: null }, 'jogador', 'o Léo')).toBe('Prof. Marta, o Léo disse que tem tarefa de ELA, mas não lembrou os detalhes. Pode me passar o que precisa?')
+  })
+  it('aviso de entrega para os pais já traz a tarefa', () => {
+    const tarefas = [
+      { materia: 'Matemática', onde: 'livro', paginas: '45, 46', prazo: '2026-11-12' },
+      { materia: 'ELA', paginas: '9' },
+      { materia: 'Ciências' },
+    ]
+    expect(r.resumoEntrega({ filho: 'Léo', tarefas })).toBe('Léo entregou a missão. Matemática: livro, p. 45 e 46, para qui 12/11. ELA: p. 9. Ciências: não lembrou a página.')
+    expect(r.resumoEntrega({ filho: 'Léo', tarefas: [] })).toBe('Léo entregou a missão: sem tarefa hoje.')
+    expect(r.resumoEntrega({ filho: 'Léo', tarefas: [{ materia: 'ELA', texto: 'Trazer uma foto da família.' }] })).toBe('Léo entregou a missão. ELA: Trazer uma foto da família.')
+    const muitas = Array.from({ length: 12 }, (_, i) => ({ materia: `Matéria número ${i}`, onde: 'apostila', paginas: '100, 101, 102', prazo: '2026-11-12' }))
+    expect(r.resumoEntrega({ filho: 'Léo', tarefas: muitas }).length).toBeLessThanOrEqual(300)
+  })
+})

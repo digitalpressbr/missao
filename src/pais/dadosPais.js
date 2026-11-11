@@ -1,5 +1,5 @@
 // Monta o que o painel dos pais mostra, a partir dos dados já carregados. Sem rede e sem tela.
-import { HORA_AVISO_PAIS, horaSP, inicioSemana, minutos, recadoProfessora, robuxDaSemana, seloTarefa, sequencia, somarDias, diaSemana } from '../lib/regras'
+import { HORA_AVISO_PAIS, horaSP, inicioSemana, minutos, ondeEPaginas, recadoProfessora, robuxDaSemana, seloDaTarefa, sequencia, somarDias, diaSemana } from '../lib/regras'
 
 const NOMES = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex']
 
@@ -9,18 +9,18 @@ export function resumoDoDia({ missao, tarefas = [], aulas = [], hora, letivo, al
   else if (!letivo) situacao = 'sem-aula'
   else situacao = minutos(hora) >= minutos(HORA_AVISO_PAIS) ? 'sem-resposta' : 'aguardando'
 
-  const selo = missao ? seloTarefa(missao) : null
   const cartoes = missao
-    ? tarefas.map((t) => ({
+    ? tarefas.map((t) => ({ t, selo: seloDaTarefa(missao, t) })).map(({ t, selo }) => ({
         id: t.id,
         materia: t.materia,
         professor: t.professor ?? null,
         selo,
+        paginas: ondeEPaginas(t) || null,
         texto: t.texto ?? null,
         prazo: t.prazo ?? null,
         levar: t.levar ?? null,
         conferencia: t.conferencia ?? null,
-        fotoPendente: !missao.foto_path,
+        fotoPendente: missao.status === 'parcial' && !missao.foto_path,
         recado: selo === 'duvida' ? recadoProfessora(t, missao.origem, aluno) : null,
       }))
     : []

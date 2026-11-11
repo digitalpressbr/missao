@@ -26,6 +26,14 @@ describe('resumo do dia', () => {
     expect(r.situacao).toBe('parcial')
     expect(r.cartoes[0]).toMatchObject({ texto: null, fotoPendente: true })
   })
+  it('tarefa anotada no livro: páginas no cartão, sem foto pendente; sem página vira dúvida com recado', () => {
+    const r = resumoDoDia({ ...base, hora: '14:00', missao: { ...entregue, foto_path: null },
+      tarefas: [{ id: 1, materia: 'Math', professor: 'Prof. A', onde: 'livro', paginas: '45, 46', prazo: '2026-11-12' }, { id: 2, materia: 'ELA', professor: 'Prof. B' }] })
+    expect(r.situacao).toBe('entregue')
+    expect(r.cartoes[0]).toMatchObject({ paginas: 'Livro, páginas 45 e 46', prazo: '2026-11-12', selo: 'completo', fotoPendente: false, recado: null })
+    expect(r.cartoes[1]).toMatchObject({ paginas: null, selo: 'duvida' })
+    expect(r.cartoes[1].recado).toContain('não lembrou os detalhes')
+  })
   it('"não lembro" traz o recado pronto em todos os cartões', () => {
     const r = resumoDoDia({ ...base, hora: '14:00', missao: { ...entregue, nao_lembro: true },
       tarefas: [{ id: 1, materia: 'ELA', professor: 'Prof. B', texto: 'Trazer foto.' }, { id: 2, materia: 'Math', professor: 'Prof. A', texto: null }] })

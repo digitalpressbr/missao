@@ -94,12 +94,12 @@ export function Hoje({ p, aoRapido }) {
         <>
           <div className="vazio">
             <p>{r.situacao === 'aguardando'
-              ? `Quando ${p.aluno} entregar a missão, as tarefas aparecem aqui com a foto da agenda e o que a professora falou.`
+              ? `Quando ${p.aluno} entregar a missão, as tarefas aparecem aqui com as páginas, o prazo e o que a professora falou.`
               : `${maiuscula(p.aluno)} não entregou a missão hoje.`}</p>
           </div>
           <div className="bloco">
             <p className="lbl">Buscando na escola?</p>
-            <p className="sub">Ele responde no seu celular, em um minuto. A foto da agenda fica para casa.</p>
+            <p className="sub">Ele responde no seu celular, em um minuto.</p>
             <button type="button" className="btn" onClick={aoRapido}>{nome} está comigo</button>
           </div>
           <button type="button" className="btn btn-ghost btn-small" disabled={ocupado} onClick={() => agir(() => marcarSemAula(p.painel.familia.id, p.hoje))}>Hoje não tem aula</button>
@@ -125,13 +125,12 @@ export function Hoje({ p, aoRapido }) {
                 <div><b>{c.materia}</b>{c.professor && <small>{c.professor}</small>}</div>
                 {c.selo === 'duvida'
                   ? <span className="tag tag-warn">Com dúvida</span>
-                  : !c.texto && c.fotoPendente
-                    ? <span className="tag tag-warn">Falta a foto</span>
-                    : <span className="tag tag-ok">Completo</span>}
+                  : <span className="tag tag-ok">Completo</span>}
               </div>
-              {c.texto
-                ? <p>{c.texto}{c.prazo ? ` Para ${dataExtenso(c.prazo)}.` : ''}</p>
-                : <p>Tem tarefa.{c.fotoPendente ? ' O texto entra quando ele fotografar a agenda.' : ' O app não conseguiu ler o texto na foto.'}</p>}
+              {c.paginas && <p><b>{c.paginas}.</b></p>}
+              {c.texto && <p>{c.texto}</p>}
+              {!c.paginas && !c.texto && <p>Tem tarefa, mas ele não lembrou a página.{c.fotoPendente ? ' Falta a foto da agenda.' : ''}</p>}
+              {c.prazo && <p>Para {dataExtenso(c.prazo)}.</p>}
               {c.levar && <p className="meta">Levar: {c.levar}</p>}
               {c.fotoPendente && <p className="meta">Foto da agenda: pendente</p>}
               {c.recado && (

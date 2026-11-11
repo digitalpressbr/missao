@@ -4,11 +4,26 @@ export const PERGUNTAS = [
   { id: 'jeito', texto: 'Tem um jeito certo de fazer?', curto: 'Jeito certo' },
   { id: 'surpresa', texto: 'É surpresa ou segredo?', curto: 'Surpresa' },
   { id: 'dia', texto: 'Tem dia marcado?', curto: 'Dia marcado' },
+  { id: 'bilhete', texto: 'Veio bilhete ou recado para os pais?', curto: 'Bilhete' },
 ]
+
+// O que o aluno informa de cada matéria que passou tarefa.
+export const ONDE = [
+  { id: 'livro', nome: 'Livro' },
+  { id: 'apostila', nome: 'Apostila' },
+  { id: 'caderno', nome: 'Caderno' },
+  { id: 'folha', nome: 'Folha' },
+]
+const VAZIO = { onde: null, paginas: [], prazo: null }
+const MAX_PAGINAS = 12
+
+export function detalheDe(estado, materia) {
+  return { ...VAZIO, ...(estado.detalhes?.[materia] ?? {}) }
+}
 
 export function estadoInicial(origem = 'jogador') {
   return {
-    passo: 'inicio', origem, marcadas: [], foto: null, semFoto: false,
+    passo: 'inicio', origem, marcadas: [], detalhes: {}, indice: 0, foto: null, semFoto: false,
     respostas: {}, audio: null, textoLivre: '', naoLembro: false, erro: null, missao: null,
   }
 }
@@ -17,14 +32,37 @@ export function algumSim(estado) {
   return Object.values(estado.respostas).some((v) => v === true)
 }
 
+function comDetalhe(e, materia, mudar) {
+  return { ...e, detalhes: { ...e.detalhes, [materia]: mudar(detalheDe(e, materia)) } }
+}
+
 export function missaoReducer(e, a) {
   switch (a.tipo) {
     case 'iniciar':
       return { ...e, passo: 'aulas' }
     case 'marcarAula':
       return { ...e, marcadas: e.marcadas.includes(a.materia) ? e.marcadas.filter((m) => m !== a.materia) : [...e.marcadas, a.materia] }
-    case 'continuar':
+    case 'continuar': {
       if (!e.marcadas.length) return { ...e, passo: 'enviando' }
+      // As matérias seguem a ordem das aulas do dia, não a ordem dos toques.
+      const ordem = a.ordem ?? []
+      const posicao = (m) => (ordem.includes(m) ? ordem.indexOf(m) : ordem.length)
+      const marcadas = [...e.marcadas].sort((x, y) => posicao(x) - posicao(y))
+      return { ...e, marcadas, passo: 'paginas', indice: 0 }
+    }
+    case 'definirOnde':
+      return comDetalhe(e, a.materia, (d) => ({ ...d, onde: d.onde === a.onde ? null : a.onde }))
+    case 'addPagina': {
+      const pagina = String(a.pagina ?? '').replace(/\D/g, '').replace(/^0+/, '').slice(0, 4)
+      if (!pagina) return e
+      return comDetalhe(e, a.materia, (d) => (d.paginas.includes(pagina) || d.paginas.length >= MAX_PAGINAS ? d : { ...d, paginas: [...d.paginas, pagina] }))
+    }
+    case 'tirarPagina':
+      return comDetalhe(e, a.materia, (d) => ({ ...d, paginas: d.paginas.filter((p) => p !== a.pagina) }))
+    case 'definirPrazo':
+      return comDetalhe(e, a.materia, (d) => ({ ...d, prazo: d.prazo === a.prazo ? null : a.prazo }))
+    case 'paginasOk':
+      if (e.indice < e.marcadas.length - 1) return { ...e, indice: e.indice + 1 }
       return { ...e, passo: e.origem === 'rapido' ? 'detalhes' : 'foto' }
     case 'fotoPronta':
       return { ...e, semFoto: false, foto: { path: a.path, lida: a.lida ?? [], legivel: Boolean(a.legivel) } }
@@ -54,8 +92,9 @@ export function missaoReducer(e, a) {
       return { ...e, passo: 'enviando', erro: null }
     case 'voltar':
       if (e.passo === 'aulas') return { ...e, passo: 'inicio' }
-      if (e.passo === 'foto') return { ...e, passo: 'aulas' }
-      if (e.passo === 'detalhes') return { ...e, passo: e.origem === 'rapido' ? 'aulas' : 'foto' }
+      if (e.passo === 'paginas') return e.indice > 0 ? { ...e, indice: e.indice - 1 } : { ...e, passo: 'aulas' }
+      if (e.passo === 'foto') return { ...e, passo: 'paginas', indice: Math.max(0, e.marcadas.length - 1) }
+      if (e.passo === 'detalhes') return e.origem === 'rapido' ? { ...e, passo: 'paginas', indice: Math.max(0, e.marcadas.length - 1) } : { ...e, passo: 'foto' }
       return e
     case 'restaurar':
       return a.estado
@@ -69,7 +108,10 @@ export function montarEntrega(e, aulas) {
   return {
     origem: e.origem,
     nao_lembro: e.naoLembro,
-    materias: aulas.filter((a) => e.marcadas.includes(a.materia)).map((a) => ({ materia: a.materia, professor: a.professor ?? null })),
+    materias: aulas.filter((a) => e.marcadas.includes(a.materia)).map((a) => {
+      const d = detalheDe(e, a.materia)
+      return { materia: a.materia, professor: a.professor ?? null, onde: d.onde, paginas: d.paginas.join(', ') || null, prazo: d.prazo }
+    }),
     respostas: e.respostas,
     foto_path: e.foto?.path ?? null,
     foto_lida: e.foto?.lida ?? [],
@@ -82,7 +124,7 @@ export function montarEntrega(e, aulas) {
 function chave(dia, origem) {
   return origem === 'rapido' ? `missao-rascunho-rapido-${dia}` : `missao-rascunho-${dia}`
 }
-const GUARDAR = ['aulas', 'foto', 'detalhes', 'enviando', 'erro']
+const GUARDAR = ['aulas', 'paginas', 'foto', 'detalhes', 'enviando', 'erro']
 
 export function salvarRascunho(guarda, dia, e) {
   try {
