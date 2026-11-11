@@ -186,3 +186,5 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
   .meter i, .g-meter i { transition: none; }
   .g-btn:active { transform: none; }
 }
+
+a.g-btn, a.btn { text-decoration: none; }

@@ -2,6 +2,16 @@
 self.addEventListener('install', () => self.skipWaiting())
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()))
 
+// Abertura do app: sempre pela rede (nada fica guardado). Sem internet, mostra um aviso em vez da tela de erro do navegador.
+// Navegadores como o da Samsung só instalam o app de verdade quando existe este tratamento.
+const SEM_INTERNET = '<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Missão do Dia</title><body style="margin:0;min-height:100vh;display:grid;place-items:center;background:#13132E;color:#fff;font-family:system-ui,sans-serif;text-align:center;padding:24px"><div><h1 style="font-size:1.4rem">Sem internet</h1><p>Conecte o celular e abra o app de novo.</p></div></body></html>'
+self.addEventListener('fetch', (event) => {
+  if (event.request.mode !== 'navigate') return
+  event.respondWith(
+    fetch(event.request).catch(() => new Response(SEM_INTERNET, { headers: { 'Content-Type': 'text/html; charset=utf-8' } }))
+  )
+})
+
 self.addEventListener('push', (event) => {
   let dados = {}
   try {

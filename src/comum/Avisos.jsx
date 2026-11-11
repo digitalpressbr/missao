@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { ativarAvisos, avisoDeTeste, ehIOS, ehSamsungInternet, estaInstalado, sincronizarInscricao, situacaoAvisos } from '../lib/push'
+import { ativarAvisos, avisoDeTeste, ehIOS, estaInstalado, sincronizarInscricao, situacaoAvisos } from '../lib/push'
+import Instalar from './Instalar.jsx'
 
 // Cartão de avisos e instalação. `jogo` usa o visual do jogador; `soSePrecisar` some quando já está tudo ligado.
 export default function Avisos({ jogo = false, soSePrecisar = false }) {
@@ -63,11 +64,7 @@ export default function Avisos({ jogo = false, soSePrecisar = false }) {
     <div className={caixa}>
       <b>Avisos</b>
       {corpo}
-      {!instalado && !ehIOS() && (
-        <p className={sub}>
-          Para instalar: {ehSamsungInternet() ? 'abra este endereço no Chrome, ' : ''}toque no menu do Chrome (três pontos) e em “Adicionar à tela inicial”.
-        </p>
-      )}
+      {!instalado && !ehIOS() && <Instalar jogo={jogo} solto />}
       {msg && <p className={sub} role="status">{msg}</p>}
     </div>
   )

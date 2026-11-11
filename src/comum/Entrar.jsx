@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { usarSessao } from './Sessao.jsx'
 import { mensagemDeErro } from '../lib/sessao'
+import Instalar from './Instalar.jsx'
 
 export default function Entrar() {
   const { entrar, erro: erroDaSessao } = usarSessao()
@@ -40,6 +41,7 @@ export default function Entrar() {
           {erro && <p className="g-erro" role="alert">{erro}</p>}
           <button className="g-btn" type="submit" disabled={enviando}>{enviando ? 'Entrando...' : 'Entrar'}</button>
         </form>
+        <Instalar jogo />
       </div>
     </main>
   )
