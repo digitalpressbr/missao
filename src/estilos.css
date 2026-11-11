@@ -30,6 +30,25 @@
   }
 }
 
+/* Tema do modo jogador, um por filho. Vale na página inteira (data-tema na raiz) ou só em um pedaço dela. */
+[data-tema="azul"] {
+  --g-bg: #13132E; --g-panel: #1D1E46; --g-panel-2: #292B63; --g-line: #3D4085;
+  --g-ink: #F2F3FF; --g-muted: #ABAFE0;
+  --g-accent: #35DFCB; --g-accent-deep: #1A9A8C; --g-accent-ink: #06211E;
+  --g-xp: #FFB72E; --g-xp-ink: #3B2A00; --g-hot: #FF5E7A;
+  --hood-2: #8F70FF; --hood-3: #FF8A3D;
+}
+[data-tema="rosa"] {
+  --g-bg: #FFE4F0; --g-panel: #FFFFFF; --g-panel-2: #FFD0E4; --g-line: #F2A0C6;
+  --g-ink: #47102F; --g-muted: #8B4A6C;
+  --g-accent: #C8106E; --g-accent-deep: #8E0A4E; --g-accent-ink: #FFFFFF;
+  --g-xp: #B45F00; --g-xp-ink: #FFFFFF; --g-hot: #E8336D;
+  --hood-2: #9B5DE5; --hood-3: #FF8A3D;
+}
+[data-tema="rosa"] .modo-jogador { color-scheme: light; }
+/* Tela mais comprida que o aparelho: o fundo continua na cor do jogo até o fim. */
+html:has(.modo-jogador) body { background: var(--g-bg); }
+
 * { box-sizing: border-box; }
 html, body, #raiz { height: 100%; }
 body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 1rem; line-height: 1.45; -webkit-text-size-adjust: 100%; }
@@ -202,3 +221,11 @@ a.g-btn, a.btn { text-decoration: none; }
 .g-teclado button:active { background: var(--g-panel-2); }
 .g-teclado .g-tecla-mais { font-size: 1rem; border-color: var(--g-accent); color: var(--g-accent); }
 .g-teclado button:disabled { opacity: .45; cursor: default; }
+
+/* Pais com mais de um filho: de quem é o painel */
+.filhos { display: flex; gap: .5rem; }
+.filho { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: .55rem; min-height: 3.2rem; cursor: pointer; text-align: left; border: 1.5px solid var(--line); border-radius: 999px; padding: .3rem .8rem .3rem .35rem; background: var(--surface); color: var(--ink); }
+.filho[aria-pressed="true"] { border-color: var(--brand); background: var(--brand-soft); }
+.filho b { display: block; line-height: 1.15; }
+.filho small { display: block; font-size: .76rem; font-weight: 600; color: var(--muted); }
+.av-mini { width: 2.5rem; padding: .13rem; }

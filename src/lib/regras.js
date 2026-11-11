@@ -161,6 +161,11 @@ export function seloDaTarefa(missao, tarefa) {
   return tarefa.texto || listaPaginas(tarefa.paginas).length ? 'completo' : 'duvida'
 }
 
+// O tratamento vem com o artigo ('o Léo', 'a Ana') e diz como falar do aluno.
+export function pronomes(tratamento) {
+  return /^a\s/i.test(String(tratamento ?? '').trim()) ? { ele: 'ela', dele: 'dela' } : { ele: 'ele', dele: 'dele' }
+}
+
 // aluno já vem com o artigo: 'o Léo', 'a Ana'.
 export function recadoProfessora(tarefa, origem, aluno) {
   const quem = tarefa.professor || 'Professora'

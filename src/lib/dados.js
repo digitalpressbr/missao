@@ -91,12 +91,18 @@ export async function linkAssinado(path, segundos = 600) {
 }
 
 // Avisa os pais na hora. Se falhar, o agendador do servidor manda em até 5 minutos.
-export function avisarEntrega() {
-  supabase.functions.invoke('ms-avisos', { body: { motivo: 'entrega' } }).catch(() => {})
+export function avisarEntrega(familiaId) {
+  supabase.functions.invoke('ms-avisos', { body: { motivo: 'entrega', familia: familiaId } }).catch(() => {})
 }
 
-export async function marcarTroca(segunda) {
-  return dadoOuErro(await supabase.rpc('ms_marcar_troca', { p_segunda: segunda }))
+// Quadros (filhos) que já entregaram a missão de hoje, entre os que a pessoa enxerga.
+export async function entreguesHoje(agora = new Date()) {
+  const r = await supabase.from('ms_missoes').select('familia_id').eq('dia', hojeSP(agora))
+  return r.error ? [] : r.data.map((m) => m.familia_id)
+}
+
+export async function marcarTroca(segunda, familiaId) {
+  return dadoOuErro(await supabase.rpc('ms_marcar_troca', { p_segunda: segunda, p_familia: familiaId }))
 }
 
 export async function conferirTarefa(id, valor) {

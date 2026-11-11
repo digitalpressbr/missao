@@ -171,3 +171,14 @@ describe('tarefa anotada no livro: onde, páginas e prazo', () => {
     expect(r.resumoEntrega({ filho: 'Léo', tarefas: muitas }).length).toBeLessThanOrEqual(300)
   })
 })
+
+describe('pronomes', () => {
+  it('segue o artigo do tratamento', () => {
+    expect(r.pronomes('a Ana')).toEqual({ ele: 'ela', dele: 'dela' })
+    expect(r.pronomes('o Léo')).toEqual({ ele: 'ele', dele: 'dele' })
+  })
+  it('sem tratamento fica no masculino, e nome começado por A não confunde', () => {
+    expect(r.pronomes(null)).toEqual({ ele: 'ele', dele: 'dele' })
+    expect(r.pronomes('Ana')).toEqual({ ele: 'ele', dele: 'dele' })
+  })
+})

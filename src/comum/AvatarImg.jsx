@@ -17,7 +17,7 @@ async function linkDoAvatar(familiaId) {
   return url
 }
 
-export default function AvatarImg({ familiaId, moldura = 0, grande = false, nome = '' }) {
+export default function AvatarImg({ familiaId, moldura = 0, grande = false, mini = false, nome = '' }) {
   const [url, setUrl] = useState(guardados.get(familiaId) ?? null)
   useEffect(() => {
     let vivo = true
@@ -26,7 +26,7 @@ export default function AvatarImg({ familiaId, moldura = 0, grande = false, nome
   }, [familiaId])
   const cor = (MOLDURAS[moldura] ?? MOLDURAS[0]).cor
   return (
-    <span className={grande ? 'av av-big' : 'av'} style={{ '--ring': cor }}>
+    <span className={grande ? 'av av-big' : mini ? 'av av-mini' : 'av'} style={{ '--ring': cor }}>
       <span className="av-in">{url && <img src={url} alt={nome ? `Avatar de ${nome}` : ''} width="400" height="400" />}</span>
     </span>
   )

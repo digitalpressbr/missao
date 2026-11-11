@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { carregarPainel } from './dados'
-import { aulasDoDia, diaSemana, ehDiaLetivo, estadoMissao, hojeSP, horaSP, inicioSemana, robuxDaSemana, sequencia } from './regras'
+import { aulasDoDia, diaSemana, ehDiaLetivo, estadoMissao, hojeSP, horaSP, inicioSemana, pronomes, robuxDaSemana, sequencia } from './regras'
 
 // Carrega os dados da família, recarrega quando o app volta para a frente e acompanha o relógio.
 export function usarPainel(familiaId) {
@@ -51,6 +51,7 @@ export function usarPainel(familiaId) {
       missao,
       filho,
       aluno: filho?.tratamento || filho?.nome || 'o aluno',
+      ...pronomes(filho?.tratamento),
       aulas: aulasDoDia(painel.grade, hoje),
       estado: estadoMissao(horario ?? { libera: '00:00', bonus_ate: '00:00' }, hora, missao, letivo),
       robux: robuxDaSemana(painel.missoes, inicioSemana(hoje)),

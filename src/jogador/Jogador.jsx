@@ -63,12 +63,12 @@ export default function Jogador() {
     if (estado.passo !== 'enviando' || !p.painel) return undefined
     let vivo = true
     robuxAntes.current = p.robux
-    entregarMissao(montarEntrega(estado, p.aulas))
+    entregarMissao({ ...montarEntrega(estado, p.aulas), familia: membro.familia_id })
       .then((missao) => {
         if (!vivo) return
         dispatch({ tipo: 'entregue', missao })
         if (!completando) tocarVitoria()
-        avisarEntrega()
+        avisarEntrega(membro.familia_id)
         p.recarregar()
       })
       .catch((e) => vivo && dispatch({ tipo: 'falhou', msg: mensagemEntrega(e) }))

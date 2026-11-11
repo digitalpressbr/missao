@@ -20,7 +20,7 @@ function Copiar({ texto }) {
   return <button type="button" className="btn btn-small" onClick={copiar}>{rotulo}</button>
 }
 
-function Arquivos({ missao }) {
+function Arquivos({ missao, ele }) {
   const [foto, setFoto] = useState(null)
   const [audio, setAudio] = useState(null)
   const [cheia, setCheia] = useState(false)
@@ -41,7 +41,7 @@ function Arquivos({ missao }) {
       )}
       {missao.audio_path && (
         <>
-          <p className="lbl">O que ele contou</p>
+          <p className="lbl">O que {ele} contou</p>
           {audio ? <audio controls src={audio} style={{ width: '100%' }} /> : <p className="meta">Carregando o áudio...</p>}
           {missao.transcricao ? <p className="quote">“{missao.transcricao}”</p> : <p className="meta">Sem transcrição. Ouça o áudio.</p>}
         </>
@@ -99,7 +99,7 @@ export function Hoje({ p, aoRapido }) {
           </div>
           <div className="bloco">
             <p className="lbl">Buscando na escola?</p>
-            <p className="sub">Ele responde no seu celular, em um minuto.</p>
+            <p className="sub">{maiuscula(p.ele)} responde no seu celular, em um minuto.</p>
             <button type="button" className="btn" onClick={aoRapido}>{nome} está comigo</button>
           </div>
           <button type="button" className="btn btn-ghost btn-small" disabled={ocupado} onClick={() => agir(() => marcarSemAula(p.painel.familia.id, p.hoje))}>Hoje não tem aula</button>
@@ -129,7 +129,7 @@ export function Hoje({ p, aoRapido }) {
               </div>
               {c.paginas && <p><b>{c.paginas}.</b></p>}
               {c.texto && <p>{c.texto}</p>}
-              {!c.paginas && !c.texto && <p>Tem tarefa, mas ele não lembrou a página.{c.fotoPendente ? ' Falta a foto da agenda.' : ''}</p>}
+              {!c.paginas && !c.texto && <p>Tem tarefa, mas {p.ele} não lembrou a página.{c.fotoPendente ? ' Falta a foto da agenda.' : ''}</p>}
               {c.prazo && <p>Para {dataExtenso(c.prazo)}.</p>}
               {c.levar && <p className="meta">Levar: {c.levar}</p>}
               {c.fotoPendente && <p className="meta">Foto da agenda: pendente</p>}
@@ -155,9 +155,9 @@ export function Hoje({ p, aoRapido }) {
               {m.texto_livre && <p className="quote">“{m.texto_livre}”</p>}
             </div>
           )}
-          <Arquivos missao={m} />
-          {r.cartoes.length > 0 && r.semTarefa.length > 0 && <p className="sub">Sem tarefa, segundo ele: {r.semTarefa.join(', ')}.</p>}
-          <p className="note">Missão entregue. Pode liberar o jogo no controle de pais do celular dele.</p>
+          <Arquivos missao={m} ele={p.ele} />
+          {r.cartoes.length > 0 && r.semTarefa.length > 0 && <p className="sub">Sem tarefa, segundo {p.ele}: {r.semTarefa.join(', ')}.</p>}
+          <p className="note">Missão entregue. Pode liberar o jogo no controle de pais do celular {p.dele}.</p>
         </>
       )}
     </>
@@ -169,13 +169,13 @@ export function Semana({ p }) {
   const [ocupado, setOcupado] = useState(false)
   const s = resumoDaSemana({ missoes: p.painel.missoes, semAula: p.painel.semAula, hoje: p.hoje, trocas: p.painel.trocas })
   const pct = Math.min(100, Math.round((s.robux / p.meta) * 100))
-  const nome = p.filho?.nome ?? 'ele'
+  const nome = p.filho?.nome ?? p.ele
   const classes = { ok: 'dia-ok', hoje: 'dia-hoje', perdido: 'dia-perdido', 'sem-aula': 'dia-sem-aula', futuro: '' }
 
   async function trocar() {
     setOcupado(true)
     try {
-      await marcarTroca(s.segunda)
+      await marcarTroca(s.segunda, p.painel.familia.id)
       await p.recarregar()
     } finally {
       setOcupado(false)
@@ -189,7 +189,7 @@ export function Semana({ p }) {
       <div className="xp">
         <div className="xp-top"><span>Robux da semana</span><b>{s.robux} / {p.meta}</b></div>
         <div className="meter" role="img" aria-label={`${s.robux} de ${p.meta} Robux`}><i style={{ '--w': `${pct}%` }} /></div>
-        <p className="sub">Cada missão entregue vale {p.painel.familia.robux_por_missao} Robux. Semana incompleta paga o que ele juntou.</p>
+        <p className="sub">Cada missão entregue vale {p.painel.familia.robux_por_missao} Robux. Semana incompleta paga o que {p.ele} juntou.</p>
       </div>
       <div className="dias">
         {s.dias.map((d) => (
@@ -198,7 +198,7 @@ export function Semana({ p }) {
       </div>
       <p className="note">
         {s.sequencia} {s.sequencia === 1 ? 'dia seguido' : 'dias seguidos'} de missão entregue, {s.escudos} {s.escudos === 1 ? 'escudo' : 'escudos'}.
-        O escudo segura a sequência quando ele perde um dia. Ganha um a cada 5 dias seguidos.
+        O escudo segura a sequência quando {p.ele} perde um dia. Ganha um a cada 5 dias seguidos.
       </p>
       <div className="cartao">
         <p className="lbl">Troca de sábado</p>

@@ -6,6 +6,12 @@ import { escutarConvite } from './lib/instalar'
 import { registrarServiceWorker } from './lib/push'
 
 // Antes de montar as telas: o convite de instalação pode chegar a qualquer momento.
+try {
+  const tema = localStorage.getItem('missao-tema')
+  if (tema === 'rosa' || tema === 'azul') document.documentElement.dataset.tema = tema
+} catch {
+  /* modo privado: segue com as cores padrão */
+}
 escutarConvite()
 // Registra cedo: é o que faz o navegador tratar o endereço como app instalável (ícone próprio, sem atalho de favorito).
 window.addEventListener('load', () => {

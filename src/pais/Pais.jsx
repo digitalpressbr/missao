@@ -1,8 +1,9 @@
-import { useEffect, useReducer, useRef, useState } from 'react'
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { usarSessao } from '../comum/Sessao.jsx'
 import Avisos from '../comum/Avisos.jsx'
+import AvatarImg from '../comum/AvatarImg.jsx'
 import { usarPainel } from '../lib/usarPainel'
-import { avisarEntrega, entregarMissao, mensagemEntrega } from '../lib/dados'
+import { avisarEntrega, entregarMissao, entreguesHoje, mensagemEntrega } from '../lib/dados'
 import { estadoInicial, lerRascunho, missaoReducer, montarEntrega, salvarRascunho } from '../jogador/missaoEstado'
 import { Aulas, Detalhes, Paginas } from '../jogador/Passos.jsx'
 import { proximosDiasLetivos } from '../lib/regras'
@@ -11,24 +12,24 @@ import { Hoje, Semana } from './Telas.jsx'
 // O filho responde no celular de quem busca.
 function ModoRapido({ p, familiaId, aoFechar }) {
   const [estado, dispatch] = useReducer(missaoReducer, undefined, () => {
-    const rascunho = lerRascunho(localStorage, p.hoje, 'rapido')
+    const rascunho = lerRascunho(localStorage, p.hoje, 'rapido', familiaId)
     return rascunho ?? { ...estadoInicial('rapido'), passo: 'aulas' }
   })
   const pronto = useRef(false)
 
   useEffect(() => {
-    salvarRascunho(localStorage, p.hoje, estado)
-  }, [estado, p.hoje])
+    salvarRascunho(localStorage, p.hoje, estado, familiaId)
+  }, [estado, p.hoje, familiaId])
 
   useEffect(() => {
     if (estado.passo !== 'enviando') return undefined
     let vivo = true
-    entregarMissao(montarEntrega(estado, p.aulas))
+    entregarMissao({ ...montarEntrega(estado, p.aulas), familia: familiaId })
       .then((missao) => {
         if (!vivo) return
         pronto.current = true
         dispatch({ tipo: 'entregue', missao })
-        avisarEntrega()
+        avisarEntrega(familiaId)
         p.recarregar()
       })
       .catch((e) => vivo && dispatch({ tipo: 'falhou', msg: mensagemEntrega(e) }))
@@ -61,7 +62,7 @@ function ModoRapido({ p, familiaId, aoFechar }) {
           <h2>Missão concluída</h2>
           <p className="g-sub">Robux para sábado.{m?.moedas ? ` Mais ${m.moedas} moedas de avatar.` : ''}</p>
         </div>
-        {m?.status === 'parcial' && <p className="g-note">Em casa falta só a foto da agenda, no celular dele.</p>}
+        {m?.status === 'parcial' && <p className="g-note">Em casa falta só a foto da agenda, no celular {p.dele}.</p>}
         <button type="button" className="g-btn" onClick={aoFechar}>Devolver o celular</button>
       </>
     )
@@ -69,27 +70,63 @@ function ModoRapido({ p, familiaId, aoFechar }) {
   return <main className="modo-jogador"><div className="tela">{conteudo}</div></main>
 }
 
+// Quem tem mais de um filho escolhe aqui de quem é o painel. O aparelho lembra a escolha.
+function Filhos({ familias, ativa, aoEscolher, entregues }) {
+  return (
+    <nav className="filhos" aria-label="Filhos">
+      {familias.map((f) => (
+        <button type="button" key={f.id} className="filho" data-tema={f.tema} aria-pressed={f.id === ativa} onClick={() => aoEscolher(f.id)}>
+          <AvatarImg familiaId={f.id} moldura={f.filho?.moldura ?? 0} nome={f.filho?.nome ?? ''} mini />
+          <span><b>{f.filho?.nome ?? 'Filho'}</b>{entregues.includes(f.id) && <small>Entregou hoje</small>}</span>
+        </button>
+      ))}
+    </nav>
+  )
+}
+
 export default function Pais() {
+  const { familia, familias, escolherFamilia } = usarSessao()
+  const [entregues, setEntregues] = useState([])
+  const varios = familias.length > 1
+
+  const conferir = useCallback(() => {
+    if (varios) entreguesHoje().then(setEntregues)
+  }, [varios])
+  useEffect(() => {
+    conferir()
+    const aoVoltar = () => { if (!document.hidden) conferir() }
+    document.addEventListener('visibilitychange', aoVoltar)
+    return () => document.removeEventListener('visibilitychange', aoVoltar)
+  }, [conferir, familia.id])
+
+  const filhos = varios ? <Filhos familias={familias} ativa={familia.id} aoEscolher={escolherFamilia} entregues={entregues} /> : null
+  // A chave troca o painel inteiro junto com o filho: nada de um aparece na tela do outro.
+  return <Painel key={familia.id} familiaId={familia.id} filhos={filhos} aoMudar={conferir} />
+}
+
+function Painel({ familiaId, filhos, aoMudar }) {
   const { membro, sair } = usarSessao()
-  const p = usarPainel(membro.familia_id)
+  const p = usarPainel(familiaId)
   const [aba, setAba] = useState('hoje')
   const [rapido, setRapido] = useState(false)
 
   if (p.erro && !p.painel) {
     return (
       <main><div className="tela">
+        {filhos}
         <h2>Sem conexão</h2>
         <p className="sub">Não consegui carregar os dados.</p>
         <button type="button" className="btn" onClick={p.recarregar}>Tentar de novo</button>
       </div></main>
     )
   }
-  if (!p.painel) return <main><div className="tela"><p className="sub">Carregando...</p></div></main>
-  if (rapido) return <ModoRapido p={p} familiaId={membro.familia_id} aoFechar={() => { setRapido(false); p.recarregar() }} />
+  if (!p.painel) return <main><div className="tela">{filhos}<p className="sub">Carregando...</p></div></main>
+  if (rapido) return <ModoRapido p={p} familiaId={familiaId} aoFechar={() => { setRapido(false); p.recarregar(); aoMudar() }} />
 
   return (
     <main>
       <div className="tela">
+        {filhos}
         {aba === 'hoje' ? <Hoje p={p} aoRapido={() => setRapido(true)} /> : <Semana p={p} />}
         {aba === 'semana' && (
           <>

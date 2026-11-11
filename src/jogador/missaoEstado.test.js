@@ -107,3 +107,14 @@ describe('rascunho no aparelho', () => {
     expect(lerRascunho(g, '2026-11-10')).toBe(null)
   })
 })
+
+describe('rascunho do modo rápido com mais de um filho', () => {
+  it('cada filho tem o seu rascunho no celular dos pais', () => {
+    const g = { m: new Map(), getItem(k) { return this.m.get(k) ?? null }, setItem(k, v) { this.m.set(k, v) }, removeItem(k) { this.m.delete(k) } }
+    const e = { ...estadoInicial('rapido'), passo: 'aulas', marcadas: ['ELA'] }
+    salvarRascunho(g, '2026-11-10', e, 'quadro-a')
+    expect(lerRascunho(g, '2026-11-10', 'rapido', 'quadro-a').marcadas).toEqual(['ELA'])
+    expect(lerRascunho(g, '2026-11-10', 'rapido', 'quadro-b')).toBe(null)
+    expect(lerRascunho(g, '2026-11-10', 'rapido')).toBe(null)
+  })
+})

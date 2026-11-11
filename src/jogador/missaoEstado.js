@@ -121,23 +121,25 @@ export function montarEntrega(e, aulas) {
   }
 }
 
-function chave(dia, origem) {
-  return origem === 'rapido' ? `missao-rascunho-rapido-${dia}` : `missao-rascunho-${dia}`
+// `quadro` separa o rascunho do modo rápido de cada filho no celular dos pais.
+function chave(dia, origem, quadro = '') {
+  const sufixo = quadro ? `-${quadro}` : ''
+  return origem === 'rapido' ? `missao-rascunho-rapido-${dia}${sufixo}` : `missao-rascunho-${dia}${sufixo}`
 }
 const GUARDAR = ['aulas', 'paginas', 'foto', 'detalhes', 'enviando', 'erro']
 
-export function salvarRascunho(guarda, dia, e) {
+export function salvarRascunho(guarda, dia, e, quadro = '') {
   try {
-    if (e.passo === 'fim' || e.passo === 'inicio') guarda.removeItem(chave(dia, e.origem))
-    else if (GUARDAR.includes(e.passo)) guarda.setItem(chave(dia, e.origem), JSON.stringify(e))
+    if (e.passo === 'fim' || e.passo === 'inicio') guarda.removeItem(chave(dia, e.origem, quadro))
+    else if (GUARDAR.includes(e.passo)) guarda.setItem(chave(dia, e.origem, quadro), JSON.stringify(e))
   } catch {
     /* aparelho sem espaço ou em modo privado: segue sem rascunho */
   }
 }
 
-export function lerRascunho(guarda, dia, origem = 'jogador') {
+export function lerRascunho(guarda, dia, origem = 'jogador', quadro = '') {
   try {
-    const bruto = guarda.getItem(chave(dia, origem))
+    const bruto = guarda.getItem(chave(dia, origem, quadro))
     if (!bruto) return null
     const e = { ...estadoInicial(origem), ...JSON.parse(bruto) }
     // Fechou o app no meio do envio: volta com as respostas guardadas e o botão de tentar de novo.

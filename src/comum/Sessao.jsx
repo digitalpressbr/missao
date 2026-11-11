@@ -1,37 +1,67 @@
-import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../api/supabase'
-import { emailInterno } from '../lib/sessao'
+import { emailInterno, familiaAtiva, montarFamilias } from '../lib/sessao'
 
 const Contexto = createContext(null)
+const GUARDA_FAMILIA = 'missao-familia'
+const GUARDA_TEMA = 'missao-tema'
+const VAZIO = { carregando: false, linhas: [], familias: [], erro: null }
 
-async function buscarMembro(userId) {
-  const r = await supabase.from('ms_membros').select('*').eq('user_id', userId).maybeSingle()
+function ler(chave) {
+  try { return localStorage.getItem(chave) } catch { return null }
+}
+function guardar(chave, valor) {
+  try { localStorage.setItem(chave, valor) } catch { /* modo privado: segue sem guardar */ }
+}
+
+// Cada filho tem o seu quadro. O filho está em um; os responsáveis, em todos.
+async function buscarQuadros(userId) {
+  const r = await supabase.from('ms_membros').select('*, familia:ms_familias(tema,criado_em)').eq('user_id', userId)
   if (r.error) throw r.error
-  if (!r.data) throw new Error('sem_familia')
-  return r.data
+  if (!r.data?.length) throw new Error('sem_familia')
+  const f = await supabase.from('ms_membros').select('familia_id,nome,tratamento,moldura').eq('papel', 'filho')
+  return { linhas: r.data, familias: montarFamilias(r.data, f.error ? [] : f.data) }
 }
 
 export function ProvedorDeSessao({ children }) {
-  const [estado, setEstado] = useState({ carregando: true, membro: null, erro: null })
+  const [estado, setEstado] = useState({ ...VAZIO, carregando: true })
+  const [escolhida, setEscolhida] = useState(() => ler(GUARDA_FAMILIA))
 
   const recarregar = useCallback(async () => {
     try {
       const { data } = await supabase.auth.getSession()
-      if (!data.session) return setEstado({ carregando: false, membro: null, erro: null })
-      const membro = await buscarMembro(data.session.user.id)
-      setEstado({ carregando: false, membro, erro: null })
+      if (!data.session) return setEstado(VAZIO)
+      setEstado({ carregando: false, erro: null, ...(await buscarQuadros(data.session.user.id)) })
     } catch (e) {
-      setEstado({ carregando: false, membro: null, erro: e })
+      setEstado({ ...VAZIO, erro: e })
     }
   }, [])
 
   useEffect(() => {
     recarregar()
     const { data } = supabase.auth.onAuthStateChange((evento) => {
-      if (evento === 'SIGNED_OUT') setEstado({ carregando: false, membro: null, erro: null })
+      if (evento === 'SIGNED_OUT') setEstado(VAZIO)
     })
     return () => data.subscription.unsubscribe()
   }, [recarregar])
+
+  const familia = useMemo(() => familiaAtiva(estado.familias, escolhida), [estado.familias, escolhida])
+  const membro = useMemo(() => estado.linhas.find((l) => l.familia_id === familia?.id) ?? estado.linhas[0] ?? null, [estado.linhas, familia])
+
+  // As cores do modo jogador seguem o quadro aberto. O aparelho lembra a última, para a tela de entrada.
+  useEffect(() => {
+    if (!familia) return
+    document.documentElement.dataset.tema = familia.tema
+    guardar(GUARDA_TEMA, familia.tema)
+    // Barra do aparelho na cor do jogo, só para o filho; o painel dos pais não muda.
+    const barra = document.querySelector('meta[name="theme-color"]')
+    if (barra) barra.content = membro?.papel === 'filho' && familia.tema === 'rosa' ? '#FFE4F0' : '#13132E'
+  }, [familia, membro?.papel])
+
+  const escolherFamilia = useCallback((id) => {
+    setEscolhida(id)
+    guardar(GUARDA_FAMILIA, id)
+  }, [])
 
   const entrar = useCallback(async (usuario, senha) => {
     const { error } = await supabase.auth.signInWithPassword({ email: emailInterno(usuario), password: senha })
@@ -51,7 +81,8 @@ export function ProvedorDeSessao({ children }) {
     await supabase.auth.signOut()
   }, [])
 
-  return <Contexto.Provider value={{ ...estado, entrar, trocarSenha, sair, recarregar }}>{children}</Contexto.Provider>
+  const valor = { carregando: estado.carregando, erro: estado.erro, membro, familia, familias: estado.familias, escolherFamilia, entrar, trocarSenha, sair, recarregar }
+  return <Contexto.Provider value={valor}>{children}</Contexto.Provider>
 }
 
 export function usarSessao() {
