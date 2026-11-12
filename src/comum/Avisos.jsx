@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { ativarAvisos, avisoDeTeste, ehIOS, estaInstalado, sincronizarInscricao, situacaoAvisos } from '../lib/push'
 import { pedirAlerta } from '../lib/alerta'
-import { ARQUIVO_ANDROID, VERSAO_ANDROID, ehNativo, escutarNativo, pedirNativo, pendenciasNativas, situacaoNativa, testarChamada, versaoNativa } from '../lib/nativo'
+import { LINK_ANDROID, VERSAO_ANDROID, ehNativo, escutarNativo, pedirNativo, pendenciasNativas, situacaoNativa, testarChamada, versaoNativa } from '../lib/nativo'
 import Instalar from './Instalar.jsx'
 
-const linkAndroid = () => `${import.meta.env.BASE_URL}${ARQUIVO_ANDROID}`
+const linkAndroid = () => LINK_ANDROID
 
 // Cartão de avisos e instalação. `jogo` usa o visual do jogador; `soSePrecisar` some quando já está tudo ligado.
 export default function Avisos(props) {

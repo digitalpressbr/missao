@@ -4,7 +4,8 @@ const ponte = () => (typeof window !== 'undefined' ? window.MissaoNativo ?? null
 
 // Versão do app Android que este código espera. Subiu aqui, o app instalado mostra "Atualizar".
 export const VERSAO_ANDROID = 1
-export const ARQUIVO_ANDROID = 'missao-do-dia.apk'
+// O arquivo fica fora do endereço do app (/missao/): dentro dele, o celular abre o app já instalado em vez de baixar.
+export const LINK_ANDROID = 'https://github.com/digitalpressbr/missao/releases/latest/download/missao-do-dia.apk'
 
 export const ehNativo = () => Boolean(ponte())
 
