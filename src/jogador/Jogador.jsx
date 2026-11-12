@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { usarSessao } from '../comum/Sessao.jsx'
-import AvatarImg, { MOLDURAS } from '../comum/AvatarImg.jsx'
+import AvatarImg, { MOLDURAS, linkDoAvatar } from '../comum/AvatarImg.jsx'
 import Avisos from '../comum/Avisos.jsx'
 import { usarPainel } from '../lib/usarPainel'
 import { ALERTA_LIBERADA, alertaPara, escutarAlertas } from '../lib/alerta'
-import { avisarEntrega, definirMoldura, entregarMissao, mensagemEntrega } from '../lib/dados'
+import { chamadasFuturas } from '../lib/chamadas'
+import { apagarInscricoesDeAviso, avisarEntrega, definirMoldura, entregarMissao, mensagemEntrega } from '../lib/dados'
+import { acaoPendente, agendarChamadas, ehNativo, escutarNativo, guardarAvatarDe } from '../lib/nativo'
 import { noHorario, proximosDiasLetivos } from '../lib/regras'
 import { pararAlerta, tocarAlerta, tocarVitoria } from '../lib/som'
 import Alerta from './Alerta.jsx'
@@ -47,6 +49,8 @@ export default function Jogador() {
   const robuxAntes = useRef(0)
   const [alerta, setAlerta] = useState(null)
   const chamou = useRef(null) // dia em que a chamada da liberação já apareceu
+  const agendaEnviada = useRef('')
+  const [pedidoIniciar, setPedidoIniciar] = useState(false)
   const situacao = useRef({})
   situacao.current = { estado: p.estado, passo: estado.passo }
 
@@ -93,13 +97,67 @@ export default function Jogador() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [estado.passo])
 
+  // App Android: o celular guarda a agenda das próximas chamadas e chama sozinho, com o app fechado.
+  // A lista é refeita a cada mudança (entregou a missão, mudou o horário, virou o dia).
+  useEffect(() => {
+    if (!ehNativo() || !p.painel) return
+    const fam = p.painel.familia
+    const dados = {
+      tema: fam.tema,
+      nome: membro.nome,
+      robux: fam.robux_por_missao,
+      chamadas: chamadasFuturas({
+        agora: Date.now(),
+        hoje: p.hoje,
+        horarios: p.painel.horarios,
+        semAula: p.painel.semAula,
+        entregueHoje: Boolean(p.missao),
+        lembretes: { intervalo: fam.lembrete_intervalo, teto: fam.lembrete_teto },
+        preAvisos: fam.pre_avisos,
+        robux: fam.robux_por_missao,
+      }),
+    }
+    const texto = JSON.stringify(dados)
+    if (texto !== agendaEnviada.current) {
+      agendaEnviada.current = texto
+      agendarChamadas(dados)
+    }
+  }, [p.painel, p.missao, p.hoje, p.hora, membro.nome])
+
+  // App Android: o avatar vai para a tela de chamada, e o aviso do navegador deixa de sair para não chamar em dobro.
+  useEffect(() => {
+    if (!ehNativo()) return
+    apagarInscricoesDeAviso(membro.user_id)
+    linkDoAvatar(membro.familia_id).then(guardarAvatarDe)
+  }, [membro.user_id, membro.familia_id])
+
+  // App Android: o jogador tocou em "Iniciar missão" na chamada do celular.
+  useEffect(() => {
+    const conferir = () => { if (acaoPendente() === 'iniciar') setPedidoIniciar(true) }
+    conferir()
+    return escutarNativo(conferir)
+  }, [])
+  useEffect(() => {
+    if (!pedidoIniciar || !p.painel) return
+    if (p.estado === 'liberada' && estado.passo === 'inicio') {
+      chamou.current = p.hoje
+      pararAlerta()
+      setAlerta(null)
+      setTela('missao')
+      dispatch({ tipo: 'iniciar' })
+    }
+    // Antes da hora o relógio do app ainda vai virar: espera. No resto, o pedido já não vale.
+    if (p.estado !== 'antes') setPedidoIniciar(false)
+  }, [pedidoIniciar, p.painel, p.estado, estado.passo, p.hoje])
+
   // Missão liberada com o app aberto (ou aberto depois da liberação): chamada em tela cheia, uma vez por dia a cada abertura.
   useEffect(() => {
+    if (pedidoIniciar) return
     if (p.estado === 'liberada' && estado.passo === 'inicio' && chamou.current !== p.hoje) {
       chamou.current = p.hoje
       chamar(ALERTA_LIBERADA)
     }
-  }, [p.estado, estado.passo, p.hoje, chamar])
+  }, [p.estado, estado.passo, p.hoje, chamar, pedidoIniciar])
 
   // Aviso do celular que chega (ou é tocado) com o app aberto, e o botão de teste.
   useEffect(() => escutarAlertas((aviso) => {

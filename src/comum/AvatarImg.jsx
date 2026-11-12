@@ -10,7 +10,7 @@ export const MOLDURAS = [
 
 const guardados = new Map()
 
-async function linkDoAvatar(familiaId) {
+export async function linkDoAvatar(familiaId) {
   if (guardados.has(familiaId)) return guardados.get(familiaId)
   const url = await linkAssinado(`${familiaId}/avatar/base.jpg`, 60 * 60 * 6)
   if (url) guardados.set(familiaId, url)

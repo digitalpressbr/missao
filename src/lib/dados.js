@@ -117,6 +117,11 @@ export async function desmarcarSemAula(familiaId, dia) {
   return dadoOuErro(await supabase.from('ms_dias_sem_aula').delete().eq('familia_id', familiaId).eq('dia', dia))
 }
 
+// App Android: quem chama o jogador é o alarme do celular. Sem isto, o aviso do navegador sairia em dobro.
+export function apagarInscricoesDeAviso(userId) {
+  supabase.from('ms_push_inscricoes').delete().eq('user_id', userId).then(() => {}, () => {})
+}
+
 export async function definirMoldura(n) {
   return dadoOuErro(await supabase.rpc('ms_definir_moldura', { p_moldura: n }))
 }

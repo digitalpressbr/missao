@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="nome_app">Missão do Dia</string>
+    <string name="canal_nome">Chamada da missão</string>
+    <string name="canal_descricao">Toca na hora da missão do dia.</string>
+</resources>

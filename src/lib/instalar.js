@@ -1,6 +1,7 @@
 // Instalação do app na tela inicial.
 // O navegador entrega um "convite" (beforeinstallprompt) quando aceita instalar; guardamos para usar no botão.
 import { useEffect, useState } from 'react'
+import { ehNativo } from './nativo'
 
 // 'instalado' | 'botao' | 'ios-safari' | 'ios-outro' | 'android-abrir-chrome' | 'android-menu' | 'computador'
 export function modoInstalar({ ua = '', toques = 0, instalado = false, temConvite = false } = {}) {
@@ -43,7 +44,7 @@ export function escutarConvite() {
 }
 
 function jaInstalado() {
-  return instaladoAgora || window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true
+  return instaladoAgora || ehNativo() || window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true
 }
 
 export function usarInstalacao() {

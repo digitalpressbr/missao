@@ -2,6 +2,7 @@
 // iPhone: só funciona com o app instalado na Tela de Início (iOS 16.4 ou mais novo),
 // e o pedido de permissão precisa sair de um toque da pessoa.
 import { supabase } from '../api/supabase'
+import { ehNativo } from './nativo'
 
 export const VAPID_PUBLICA = 'BNMbgh0RCgSneUDwj0_asexMD6Y70P4uFASKaDuiKlVhteWSh5KUIdGhfib7N5hbvGJbkuOfWTPHdc9ZHS_1LHE'
 
@@ -19,7 +20,7 @@ export function suportaPush() {
 }
 
 export function estaInstalado() {
-  return window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true
+  return ehNativo() || window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true
 }
 
 export function ehIOS() {

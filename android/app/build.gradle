@@ -1,0 +1,56 @@
+plugins {
+    id 'com.android.application'
+}
+
+// A chave de assinatura fica fora do repositório (assinatura.properties aponta para ela).
+def chave = new Properties()
+def arquivoChave = rootProject.file('assinatura.properties')
+if (arquivoChave.exists()) arquivoChave.withInputStream { chave.load(it) }
+
+android {
+    namespace 'io.github.digitalpressbr.missao'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'io.github.digitalpressbr.missao'
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+    }
+
+    buildFeatures { buildConfig true }
+
+    signingConfigs {
+        publicacao {
+            if (arquivoChave.exists()) {
+                storeFile file(chave['arquivo'])
+                storePassword chave['senha']
+                keyAlias chave['apelido']
+                keyPassword chave['senha']
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (arquivoChave.exists()) signingConfig signingConfigs.publicacao
+            buildConfigField 'String', 'INICIO', '"https://digitalpressbr.github.io/missao/"'
+        }
+        // Teste no emulador: abre o app servido pelo PC (vite preview na porta 5199).
+        debug {
+            applicationIdSuffix '.teste'
+            buildConfigField 'String', 'INICIO', '"http://10.0.2.2:5199/missao/"'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core:1.13.1'
+}

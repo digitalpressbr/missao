@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../api/supabase'
 import { emailInterno, familiaAtiva, montarFamilias } from '../lib/sessao'
+import { agendarChamadas } from '../lib/nativo'
 
 const Contexto = createContext(null)
 const GUARDA_FAMILIA = 'missao-familia'
@@ -78,6 +79,7 @@ export function ProvedorDeSessao({ children }) {
   }, [recarregar])
 
   const sair = useCallback(async () => {
+    agendarChamadas({ chamadas: [] }) // app Android: sem conta aberta o celular não chama
     await supabase.auth.signOut()
   }, [])
 

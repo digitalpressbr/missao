@@ -256,3 +256,6 @@ a.g-btn, a.btn { text-decoration: none; }
 .filho b { display: block; line-height: 1.15; }
 .filho small { display: block; font-size: .76rem; font-weight: 600; color: var(--muted); }
 .av-mini { width: 2.5rem; padding: .13rem; }
+
+/* Toque longo não seleciona o texto do botão (no app Android isso abria o menu de copiar). */
+.g-btn, .btn, .g-mini { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
