@@ -1,4 +1,4 @@
-// Sons próprios do app, feitos na hora pelo navegador. Nenhum arquivo de som de terceiros.
+// Sons próprios do app: a vitória é feita na hora pelo navegador e a chamada é um arquivo nosso. Nenhum som de terceiros.
 let contexto = null
 
 function ctx() {
@@ -34,15 +34,24 @@ export function tocarVitoria() {
   }
 }
 
-// Missão liberada, com o app aberto: dois toques.
-export function tocarChamada() {
+// Chamada da missão: toque próprio do app, pouco mais de 3 segundos (public/alerta-missao.mp3, composição nossa).
+// Sem toque da pessoa na tela o navegador pode recusar o som; aí a chamada aparece muda.
+let alerta = null
+
+export function tocarAlerta() {
   try {
-    const c = ctx()
-    if (!c) return
-    const t = c.currentTime + 0.02
-    nota(c, 880, t, 0.16, 'triangle', 0.16)
-    nota(c, 1174.66, t + 0.2, 0.26, 'triangle', 0.16)
+    alerta = alerta || new Audio(`${import.meta.env.BASE_URL}alerta-missao.mp3`)
+    alerta.currentTime = 0
+    alerta.play()?.catch(() => {})
   } catch {
     /* segue em silêncio */
+  }
+}
+
+export function pararAlerta() {
+  try {
+    alerta?.pause()
+  } catch {
+    /* nada tocando */
   }
 }

@@ -1,11 +1,13 @@
-import { useEffect, useReducer, useRef, useState } from 'react'
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { usarSessao } from '../comum/Sessao.jsx'
 import AvatarImg, { MOLDURAS } from '../comum/AvatarImg.jsx'
 import Avisos from '../comum/Avisos.jsx'
 import { usarPainel } from '../lib/usarPainel'
+import { ALERTA_LIBERADA, alertaPara, escutarAlertas } from '../lib/alerta'
 import { avisarEntrega, definirMoldura, entregarMissao, mensagemEntrega } from '../lib/dados'
 import { noHorario, proximosDiasLetivos } from '../lib/regras'
-import { tocarChamada, tocarVitoria } from '../lib/som'
+import { pararAlerta, tocarAlerta, tocarVitoria } from '../lib/som'
+import Alerta from './Alerta.jsx'
 import { estadoInicial, lerRascunho, missaoReducer, montarEntrega, salvarRascunho } from './missaoEstado'
 import { Aulas, Detalhes, Foto, Paginas } from './Passos.jsx'
 
@@ -43,7 +45,19 @@ export default function Jogador() {
   const [completando, setCompletando] = useState(false)
   const restaurado = useRef(false)
   const robuxAntes = useRef(0)
-  const chamou = useRef(false)
+  const [alerta, setAlerta] = useState(null)
+  const chamou = useRef(null) // dia em que a chamada da liberação já apareceu
+  const situacao = useRef({})
+  situacao.current = { estado: p.estado, passo: estado.passo }
+
+  const chamar = useCallback((a) => {
+    setAlerta(a)
+    tocarAlerta()
+  }, [])
+  const fecharAlerta = () => {
+    pararAlerta()
+    setAlerta(null)
+  }
 
   // Rascunho: volta de onde parou se o app foi fechado no meio.
   useEffect(() => {
@@ -51,7 +65,10 @@ export default function Jogador() {
     restaurado.current = true
     if (!p.missao) {
       const r = lerRascunho(localStorage, p.hoje, 'jogador')
-      if (r) dispatch({ tipo: 'restaurar', estado: r })
+      if (r) {
+        chamou.current = p.hoje // já começou a missão de hoje: não precisa ser chamado de novo
+        dispatch({ tipo: 'restaurar', estado: r })
+      }
     }
   }, [p.painel, p.missao, p.hoje])
   useEffect(() => {
@@ -76,13 +93,19 @@ export default function Jogador() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [estado.passo])
 
-  // App aberto na hora em que a missão libera: toca a chamada uma vez.
+  // Missão liberada com o app aberto (ou aberto depois da liberação): chamada em tela cheia, uma vez por dia a cada abertura.
   useEffect(() => {
-    if (p.estado === 'liberada' && estado.passo === 'inicio' && !chamou.current) {
-      chamou.current = true
-      tocarChamada()
+    if (p.estado === 'liberada' && estado.passo === 'inicio' && chamou.current !== p.hoje) {
+      chamou.current = p.hoje
+      chamar(ALERTA_LIBERADA)
     }
-  }, [p.estado, estado.passo])
+  }, [p.estado, estado.passo, p.hoje, chamar])
+
+  // Aviso do celular que chega (ou é tocado) com o app aberto, e o botão de teste.
+  useEffect(() => escutarAlertas((aviso) => {
+    const a = alertaPara(aviso, { ...situacao.current, oculto: document.hidden })
+    if (a) chamar(a)
+  }), [chamar])
 
   if (p.erro && !p.painel) {
     return (
@@ -227,5 +250,26 @@ export default function Jogador() {
     )
   }
 
-  return <main className="modo-jogador"><div className="tela">{conteudo}</div></main>
+  const podeIniciar = Boolean(alerta) && !alerta.teste && p.estado === 'liberada' && estado.passo === 'inicio'
+  const iniciarPeloAlerta = () => {
+    fecharAlerta()
+    setTela('missao')
+    dispatch({ tipo: 'iniciar' })
+  }
+
+  return (
+    <main className="modo-jogador">
+      <div className="tela">{conteudo}</div>
+      {alerta && (
+        <Alerta
+          membro={membro}
+          titulo={alerta.titulo}
+          texto={alerta.texto}
+          robux={podeIniciar ? p.painel.familia.robux_por_missao : null}
+          onIniciar={podeIniciar ? iniciarPeloAlerta : null}
+          onFechar={fecharAlerta}
+        />
+      )}
+    </main>
+  )
 }

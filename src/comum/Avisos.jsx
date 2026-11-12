@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ativarAvisos, avisoDeTeste, ehIOS, estaInstalado, sincronizarInscricao, situacaoAvisos } from '../lib/push'
+import { pedirAlerta } from '../lib/alerta'
 import Instalar from './Instalar.jsx'
 
 // Cartão de avisos e instalação. `jogo` usa o visual do jogador; `soSePrecisar` some quando já está tudo ligado.
@@ -22,6 +23,8 @@ export default function Avisos({ jogo = false, soSePrecisar = false }) {
   }
 
   async function testar() {
+    // No modo jogador o teste mostra também a chamada em tela cheia, com o som (sai junto do toque, senão o navegador cala).
+    if (jogo) pedirAlerta({ teste: true })
     try {
       await avisoDeTeste()
       setMsg('Aviso de teste enviado.')

@@ -201,9 +201,36 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 .entrar h1 { font-family: var(--display); font-weight: 700; font-size: 2.2rem; line-height: 1.05; }
 .entrar form { display: flex; flex-direction: column; gap: .8rem; }
 
+/* Chamada da missão: cobre o app inteiro, com as cores do quadro */
+.g-alerta {
+  position: fixed; inset: 0; z-index: 50; overflow: hidden;
+  display: flex; flex-direction: column; gap: 1rem;
+  background: var(--g-bg); color: var(--g-ink);
+  padding-block: calc(1.5rem + env(safe-area-inset-top, 0px)) calc(1.25rem + env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.g-alerta-meio { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .5rem; text-align: center; }
+.g-alerta-heroi { position: relative; display: grid; place-items: center; margin-bottom: 1rem; }
+.g-alerta-heroi .av { position: relative; width: min(11rem, 44vw); animation: g-chega .5s cubic-bezier(.2, 1.5, .4, 1) both; }
+.g-alerta-raios {
+  position: absolute; width: 30rem; aspect-ratio: 1; border-radius: 50%;
+  background: repeating-conic-gradient(color-mix(in srgb, var(--g-accent) 30%, transparent) 0 10deg, transparent 10deg 20deg);
+  -webkit-mask: radial-gradient(circle, #000 20%, transparent 68%); mask: radial-gradient(circle, #000 20%, transparent 68%);
+  animation: g-gira 16s linear infinite;
+}
+.modo-jogador .g-alerta h1 { font-size: clamp(2.2rem, 11vw, 3.2rem); line-height: 1; position: relative; }
+.g-alerta-texto { position: relative; font-size: 1.05rem; font-weight: 600; max-width: 22rem; }
+.g-alerta .g-gain { position: relative; margin-top: .4rem; }
+.g-alerta .g-gain small { font-size: 1.3rem; }
+.g-alerta-pe { position: relative; width: 100%; max-width: 30rem; margin: 0 auto; display: flex; flex-direction: column; gap: .6rem; }
+@keyframes g-gira { to { transform: rotate(360deg); } }
+@keyframes g-chega { from { transform: scale(.4); opacity: 0; } }
+
 @media (prefers-reduced-motion: reduce) {
   .meter i, .g-meter i { transition: none; }
   .g-btn:active { transform: none; }
+  .g-alerta-raios, .g-alerta-heroi .av { animation: none; }
 }
 
 a.g-btn, a.btn { text-decoration: none; }
