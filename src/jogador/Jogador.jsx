@@ -27,15 +27,18 @@ function Barra({ de, para, meta }) {
   )
 }
 
-function Semana({ de, robux, meta, texto }) {
+function Semana({ de, robux, meta, guardados, texto }) {
   return (
     <div className="g-panel">
-      <div className="g-row"><span>Troca de sábado</span><b>{robux} / {meta}</b></div>
+      <div className="g-row"><span>Esta semana</span><b>{robux} / {meta}</b></div>
       <Barra de={de ?? robux} para={robux} meta={meta} />
+      <div className="g-row"><span>Robux guardados</span><b>{guardados}</b></div>
       <p className="g-sub">{texto}</p>
     </div>
   )
 }
+
+const TEXTO_GUARDADOS = 'Os Robux não zeram: ficam guardados até você usar. Seus pais descontam o que você usar.'
 
 const hhmm = (t) => String(t).slice(0, 5)
 
@@ -47,6 +50,7 @@ export default function Jogador() {
   const [completando, setCompletando] = useState(false)
   const restaurado = useRef(false)
   const robuxAntes = useRef(0)
+  const saldoAntes = useRef(0)
   const [alerta, setAlerta] = useState(null)
   const chamou = useRef(null) // dia em que a chamada da liberação já apareceu
   const agendaEnviada = useRef('')
@@ -84,6 +88,7 @@ export default function Jogador() {
     if (estado.passo !== 'enviando' || !p.painel) return undefined
     let vivo = true
     robuxAntes.current = p.robux
+    saldoAntes.current = p.saldo
     entregarMissao({ ...montarEntrega(estado, p.aulas), familia: membro.familia_id })
       .then((missao) => {
         if (!vivo) return
@@ -233,9 +238,9 @@ export default function Jogador() {
           <AvatarImg familiaId={membro.familia_id} moldura={membro.moldura} nome={membro.nome} grande />
           {!completando && <p className="g-gain">+{m.robux}</p>}
           <h2>{completando ? 'Missão completa' : 'Missão concluída'}</h2>
-          {!completando && <p className="g-sub">Robux para sábado.{m.moedas ? ` Mais ${m.moedas} moedas de avatar pelo horário.` : ''}</p>}
+          {!completando && <p className="g-sub">Robux guardados.{m.moedas ? ` Mais ${m.moedas} moedas de avatar pelo horário.` : ''}</p>}
         </div>
-        <Semana de={completando ? undefined : robuxAntes.current} robux={completando ? p.robux : robuxAntes.current + m.robux} meta={p.meta} texto="No sábado você recebe o que juntou na semana." />
+        <Semana de={completando ? undefined : robuxAntes.current} robux={completando ? p.robux : robuxAntes.current + m.robux} meta={p.meta} guardados={completando ? p.saldo : saldoAntes.current + m.robux} texto={TEXTO_GUARDADOS} />
         {m.nao_lembro && <p className="g-note">Você marcou “não lembro”. Vale igual: seus pais perguntam para a professora.</p>}
         {m.status === 'parcial' && <p className="g-note">Falta só a foto da agenda. Dá para tirar depois, na tela inicial.</p>}
         <button type="button" className="g-btn" onClick={voltarAoInicio}>Voltar ao início</button>
@@ -297,11 +302,11 @@ export default function Jogador() {
           </div>
         </div>
         <div className="g-stats">
-          <div className="g-stat"><b>{p.robux}</b><small>Robux na semana</small></div>
+          <div className="g-stat"><b>{p.saldo}</b><small>Robux guardados</small></div>
           <div className="g-stat"><b>{p.dias}</b><small>dias seguidos</small></div>
           <div className="g-stat"><b>{p.escudos}</b><small>{p.escudos === 1 ? 'escudo' : 'escudos'}</small></div>
         </div>
-        <Semana robux={p.robux} meta={p.meta} texto={`Cada missão entregue vale ${p.painel.familia.robux_por_missao} Robux. Semana cheia: ${p.meta}.`} />
+        <Semana robux={p.robux} meta={p.meta} guardados={p.saldo} texto={`Cada missão entregue vale ${p.painel.familia.robux_por_missao} Robux. ${TEXTO_GUARDADOS}`} />
         {cartao}
         <Avisos jogo soSePrecisar />
       </>

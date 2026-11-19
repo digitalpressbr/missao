@@ -15,7 +15,7 @@ function dadoOuErro(r) {
 export async function carregarPainel(familiaId, agora = new Date()) {
   const hoje = hojeSP(agora)
   const desde = somarDias(hoje, -HISTORICO_DIAS)
-  const [familia, membros, grade, horarios, semAula, missoes, trocas] = await Promise.all([
+  const [familia, membros, grade, horarios, semAula, missoes, trocas, saldo, abatimentos] = await Promise.all([
     supabase.from('ms_familias').select('*').eq('id', familiaId).single(),
     supabase.from('ms_membros').select('user_id,papel,nome,tratamento,moldura,usuario').eq('familia_id', familiaId),
     supabase.from('ms_grade').select('dia_semana,ordem,materia,professor').eq('familia_id', familiaId),
@@ -23,6 +23,8 @@ export async function carregarPainel(familiaId, agora = new Date()) {
     supabase.from('ms_dias_sem_aula').select('dia').eq('familia_id', familiaId).gte('dia', desde),
     supabase.from('ms_missoes').select('*').eq('familia_id', familiaId).gte('dia', desde).order('dia'),
     supabase.from('ms_trocas').select('*').eq('familia_id', familiaId).gte('semana_inicio', desde),
+    supabase.rpc('ms_saldo_robux', { p_familia: familiaId }),
+    supabase.from('ms_abatimentos').select('*').eq('familia_id', familiaId).order('feito_em', { ascending: false }).limit(10),
   ])
   const lista = dadoOuErro(missoes)
   const missaoHoje = lista.find((m) => m.dia === hoje) ?? null
@@ -38,9 +40,33 @@ export async function carregarPainel(familiaId, agora = new Date()) {
     semAula: dadoOuErro(semAula).map((d) => d.dia),
     missoes: lista,
     trocas: dadoOuErro(trocas),
+    // Robux acumulam: tudo o que ganhou menos o que os pais já abateram.
+    saldo: normalizarSaldo(saldo.error ? null : saldo.data),
+    abatimentos: abatimentos.error ? [] : abatimentos.data,
     missaoHoje,
     tarefas,
   }
+}
+
+export function normalizarSaldo(dado) {
+  const linha = Array.isArray(dado) ? dado[0] : dado
+  return { ganho: Number(linha?.ganho ?? 0), abatido: Number(linha?.abatido ?? 0), saldo: Number(linha?.saldo ?? 0) }
+}
+
+export async function abaterRobux(familiaId, robux) {
+  return normalizarSaldo(dadoOuErro(await supabase.rpc('ms_abater_robux', { p_familia: familiaId, p_robux: robux })))
+}
+
+export async function desfazerAbatimento(id) {
+  return dadoOuErro(await supabase.rpc('ms_desfazer_abatimento', { p_id: id }))
+}
+
+export function mensagemAbatimento(e) {
+  const msg = String(e?.message ?? e ?? '')
+  if (msg === 'saldo_insuficiente') return 'O valor passa do saldo guardado.'
+  if (msg === 'valor_invalido') return 'Digite quantos Robux abater.'
+  if (/failed to fetch|networkerror|load failed|network request failed/i.test(msg)) return 'Sem conexão. Tente de novo.'
+  return 'Não consegui abater. Tente de novo.'
 }
 
 export async function entregarMissao(corpo) {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { PERGUNTAS } from '../jogador/missaoEstado'
-import { conferirTarefa, desmarcarSemAula, linkAssinado, marcarSemAula, marcarTroca } from '../lib/dados'
+import { abaterRobux, conferirTarefa, desfazerAbatimento, desmarcarSemAula, linkAssinado, marcarSemAula, mensagemAbatimento } from '../lib/dados'
 import { dataExtenso, diaSemana } from '../lib/regras'
 import { resumoDaSemana, resumoDoDia } from './dadosPais'
 
@@ -164,32 +164,114 @@ export function Hoje({ p, aoRapido }) {
   )
 }
 
-export function Semana({ p }) {
+const ATALHOS = [100, 200, 300, 500]
+const diaMes = (iso) => { const d = new Date(iso); return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}` }
+
+// Saldo guardado do filho e o abatimento do que foi usado (os pais compram os Robux fora do app).
+function Guardados({ p, nome, semana }) {
+  const saldo = p.saldo
+  const [valor, setValor] = useState('')
   const [confirmando, setConfirmando] = useState(false)
   const [ocupado, setOcupado] = useState(false)
+  const [erro, setErro] = useState('')
+  const [desfazendo, setDesfazendo] = useState(null)
+  const n = Number.parseInt(valor, 10) || 0
+  const valido = n > 0 && n <= saldo
+  const quem = (uid) => p.painel.membros.find((m) => m.user_id === uid)?.nome ?? 'Responsável'
+
+  async function abater() {
+    setOcupado(true)
+    setErro('')
+    try {
+      await abaterRobux(p.painel.familia.id, n)
+      setValor('')
+      setConfirmando(false)
+      await p.recarregar()
+    } catch (e) {
+      setErro(mensagemAbatimento(e))
+    } finally {
+      setOcupado(false)
+    }
+  }
+
+  async function desfazer(id) {
+    setOcupado(true)
+    try {
+      await desfazerAbatimento(id)
+      setDesfazendo(null)
+      await p.recarregar()
+    } catch (e) {
+      setErro(mensagemAbatimento(e))
+    } finally {
+      setOcupado(false)
+    }
+  }
+
+  return (
+    <div className="cartao">
+      <div className="xp-top saldo"><span>Robux guardados de {nome}</span><b>{saldo}</b></div>
+      <p className="sub">Nesta semana: +{semana}. Não zera na semana: o saldo vai juntando até vocês usarem.</p>
+      {confirmando ? (
+        <>
+          <p>Abater <b>{n} Robux</b> de {nome}? Ficam {saldo - n} guardados.</p>
+          <div className="linha">
+            <button type="button" className="btn btn-small" disabled={ocupado} onClick={abater}>Confirmar</button>
+            <button type="button" className="btn btn-small btn-ghost" disabled={ocupado} onClick={() => setConfirmando(false)}>Voltar</button>
+          </div>
+        </>
+      ) : (
+        <>
+          <label className="lbl" htmlFor="abater">Comprou Robux? Quanto abater</label>
+          <input id="abater" className="campo" type="number" inputMode="numeric" min="1" max={saldo} placeholder="Ex.: 500"
+            value={valor} onChange={(e) => { setValor(e.target.value.replace(/\D/g, '')); setErro('') }} />
+          <div className="chips">
+            {ATALHOS.filter((v) => v < saldo).map((v) => (
+              <button type="button" className="chip" key={v} onClick={() => setValor(String(v))}>{v}</button>
+            ))}
+            {saldo > 0 && <button type="button" className="chip" onClick={() => setValor(String(saldo))}>Tudo ({saldo})</button>}
+          </div>
+          {n > saldo && <p className="sub">O saldo é {saldo}.</p>}
+          <button type="button" className="btn" disabled={!valido} onClick={() => setConfirmando(true)}>Abater</button>
+        </>
+      )}
+      {erro && <p className="sub" role="alert">{erro}</p>}
+      {p.painel.abatimentos.length > 0 && (
+        <>
+          <p className="lbl">Já abatido</p>
+          {p.painel.abatimentos.map((a) => (
+            <div className="abatido" key={a.id}>
+              <span>{diaMes(a.feito_em)} · −{a.robux} · {quem(a.feito_por)}</span>
+              {desfazendo === a.id ? (
+                <span className="linha">
+                  <button type="button" className="btn btn-small" disabled={ocupado} onClick={() => desfazer(a.id)}>Desfazer</button>
+                  <button type="button" className="btn btn-small btn-ghost" disabled={ocupado} onClick={() => setDesfazendo(null)}>Não</button>
+                </span>
+              ) : (
+                <button type="button" className="btn btn-small btn-ghost" onClick={() => setDesfazendo(a.id)}>Lançou errado?</button>
+              )}
+            </div>
+          ))}
+        </>
+      )}
+      <p className="sub">Vocês compram os Robux e abatem aqui. O app não compra nada.</p>
+    </div>
+  )
+}
+
+export function Semana({ p }) {
   const s = resumoDaSemana({ missoes: p.painel.missoes, semAula: p.painel.semAula, hoje: p.hoje, trocas: p.painel.trocas })
   const pct = Math.min(100, Math.round((s.robux / p.meta) * 100))
   const nome = p.filho?.nome ?? p.ele
   const classes = { ok: 'dia-ok', hoje: 'dia-hoje', perdido: 'dia-perdido', 'sem-aula': 'dia-sem-aula', futuro: '' }
 
-  async function trocar() {
-    setOcupado(true)
-    try {
-      await marcarTroca(s.segunda, p.painel.familia.id)
-      await p.recarregar()
-    } finally {
-      setOcupado(false)
-      setConfirmando(false)
-    }
-  }
-
   return (
     <>
       <h2>Semana de {nome}</h2>
+      <Guardados p={p} nome={nome} semana={s.robux} />
       <div className="xp">
-        <div className="xp-top"><span>Robux da semana</span><b>{s.robux} / {p.meta}</b></div>
+        <div className="xp-top"><span>Robux desta semana</span><b>{s.robux} / {p.meta}</b></div>
         <div className="meter" role="img" aria-label={`${s.robux} de ${p.meta} Robux`}><i style={{ '--w': `${pct}%` }} /></div>
-        <p className="sub">Cada missão entregue vale {p.painel.familia.robux_por_missao} Robux. Semana incompleta paga o que {p.ele} juntou.</p>
+        <p className="sub">Cada missão entregue vale {p.painel.familia.robux_por_missao} Robux.</p>
       </div>
       <div className="dias">
         {s.dias.map((d) => (
@@ -200,25 +282,6 @@ export function Semana({ p }) {
         {s.sequencia} {s.sequencia === 1 ? 'dia seguido' : 'dias seguidos'} de missão entregue, {s.escudos} {s.escudos === 1 ? 'escudo' : 'escudos'}.
         O escudo segura a sequência quando {p.ele} perde um dia. Ganha um a cada 5 dias seguidos.
       </p>
-      <div className="cartao">
-        <p className="lbl">Troca de sábado</p>
-        {s.trocaFeita ? (
-          <p>Troca feita em {dataExtenso(s.trocaFeita.feita_em.slice(0, 10)).split(', ')[1]}: {s.trocaFeita.robux} Robux.</p>
-        ) : confirmando ? (
-          <>
-            <p>Confirmar que {nome} recebeu {s.robux} Robux desta semana?</p>
-            <div className="linha">
-              <button type="button" className="btn btn-small" disabled={ocupado} onClick={trocar}>Confirmar</button>
-              <button type="button" className="btn btn-small btn-ghost" disabled={ocupado} onClick={() => setConfirmando(false)}>Cancelar</button>
-            </div>
-          </>
-        ) : (
-          <>
-            <p className="sub">Vocês compram os Robux e marcam aqui. O app não compra nada.</p>
-            <button type="button" className="btn" disabled={s.robux === 0} onClick={() => setConfirmando(true)}>Marcar troca feita</button>
-          </>
-        )}
-      </div>
     </>
   )
 }

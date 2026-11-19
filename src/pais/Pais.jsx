@@ -60,7 +60,7 @@ function ModoRapido({ p, familiaId, aoFechar }) {
         <div className="g-win">
           <p className="g-gain">+{m?.robux ?? 0}</p>
           <h2>Missão concluída</h2>
-          <p className="g-sub">Robux para sábado.{m?.moedas ? ` Mais ${m.moedas} moedas de avatar.` : ''}</p>
+          <p className="g-sub">Robux guardados.{m?.moedas ? ` Mais ${m.moedas} moedas de avatar.` : ''}</p>
         </div>
         {m?.status === 'parcial' && <p className="g-note">Em casa falta só a foto da agenda, no celular {p.dele}.</p>}
         <button type="button" className="g-btn" onClick={aoFechar}>Devolver o celular</button>

@@ -107,14 +107,19 @@ describe('painel e avisos', () => {
     expect(r.avisosDevidos({ ...base, hora: '13:15', enviados: ['pre-10', 'pre-5'] })).toEqual([{ tipo: 'liberada', para: 'filho' }])
     expect(r.avisosDevidos({ ...base, hora: '13:29', enviados: ['liberada'] })).toEqual([])
     expect(r.avisosDevidos({ ...base, hora: '13:30', enviados: ['liberada'] })).toEqual([{ tipo: 'lembrete-1', para: 'filho' }])
-    expect(r.avisosDevidos({ ...base, hora: '14:20', enviados: ['liberada'] })).toEqual([{ tipo: 'lembrete-1', para: 'filho' }])
+    expect(r.avisosDevidos({ ...base, hora: '14:20', enviados: ['liberada'] })).toEqual([{ tipo: 'lembrete-1', para: 'filho' }, { tipo: 'atraso', para: 'pais' }])
     expect(r.avisosDevidos({ ...base, hora: '13:45', enviados: ['liberada', 'lembrete-1'] })).toEqual([{ tipo: 'lembrete-2', para: 'filho' }])
     const todos = ['liberada', 'lembrete-1', 'lembrete-2', 'lembrete-3', 'lembrete-4']
-    expect(r.avisosDevidos({ ...base, hora: '15:00', enviados: todos })).toEqual([])
+    expect(r.avisosDevidos({ ...base, hora: '15:00', enviados: todos })).toEqual([{ tipo: 'atraso', para: 'pais' }])
+    expect(r.avisosDevidos({ ...base, hora: '15:00', enviados: [...todos, 'atraso'] })).toEqual([])
     expect(r.avisosDevidos({ ...base, hora: '13:30', enviados: ['liberada'], lembretes: { intervalo: 30, teto: 1 } })).toEqual([])
-    expect(r.avisosDevidos({ ...base, hora: '13:45', enviados: ['liberada'], lembretes: { intervalo: 30, teto: 1 } })).toEqual([{ tipo: 'lembrete-1', para: 'filho' }])
+    expect(r.avisosDevidos({ ...base, hora: '13:45', enviados: ['liberada'], lembretes: { intervalo: 30, teto: 1 } })).toEqual([{ tipo: 'lembrete-1', para: 'filho' }, { tipo: 'atraso', para: 'pais' }])
   })
   it('pais', () => {
+    const quase = ['liberada', 'lembrete-1', 'lembrete-2', 'lembrete-3']
+    expect(r.avisosDevidos({ ...base, hora: '14:14', enviados: quase })).toEqual([])
+    expect(r.avisosDevidos({ ...base, hora: '14:15', enviados: quase })).toEqual([{ tipo: 'lembrete-4', para: 'filho' }, { tipo: 'atraso', para: 'pais' }])
+    expect(r.avisosDevidos({ ...base, hora: '14:30', missao: { status: 'entregue' }, enviados: [...quase, 'atraso'] })).toEqual([{ tipo: 'entrega', para: 'pais' }])
     const todos = ['liberada', 'lembrete-1', 'lembrete-2', 'lembrete-3', 'lembrete-4']
     expect(r.avisosDevidos({ ...base, hora: '19:00', enviados: todos })).toEqual([{ tipo: 'sem-resposta', para: 'pais' }])
     expect(r.avisosDevidos({ ...base, hora: '19:05', enviados: [...todos, 'sem-resposta'] })).toEqual([])

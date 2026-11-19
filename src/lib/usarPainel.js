@@ -56,6 +56,7 @@ export function usarPainel(familiaId) {
       estado: estadoMissao(horario ?? { libera: '00:00', bonus_ate: '00:00' }, hora, missao, letivo),
       robux: robuxDaSemana(painel.missoes, inicioSemana(hoje)),
       meta: painel.familia.robux_por_missao * 5,
+      saldo: painel.saldo?.saldo ?? 0,
       dias: seq.dias,
       escudos: seq.escudos,
     }

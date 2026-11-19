@@ -229,6 +229,8 @@ export function avisosDevidos(ctx) {
     } else {
       const n = enviados.filter((e) => e.startsWith('lembrete-')).length + 1
       if (n <= lembretes.teto && agora >= libera + lembretes.intervalo * n) devidos.push({ tipo: `lembrete-${n}`, para: 'filho' })
+      // Acabou a série de lembretes e nada: os pais ficam sabendo antes das 19:00.
+      if (agora >= libera + lembretes.intervalo * Math.max(lembretes.teto, 1) && !enviados.includes('atraso')) devidos.push({ tipo: 'atraso', para: 'pais' })
     }
   } else if (!enviados.includes('sem-resposta')) {
     devidos.push({ tipo: 'sem-resposta', para: 'pais' })
